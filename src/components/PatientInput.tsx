@@ -1,188 +1,71 @@
-import { useState } from 'react';
-import { Calculator } from 'lucide-react';
-import { PatientData } from '../App';
+import { useState, type ReactNode } from 'react';
+import type { PatientData } from '../App';
+import { availableOrganizations } from '../guidelines/ruleEngine';
 
-interface PatientInputProps {
-  onCalculate: (data: PatientData) => void;
-}
+const initial: PatientData = {
+  physician: '', patientName: '', mrn: '', roomNumber: '', indication: '', allergies: '', specialInstructions: '',
+  guidelineOrganization: availableOrganizations.includes('ASPEN') ? 'ASPEN' : availableOrganizations[0] ?? 'ALL',
+  goalOfTherapy: 'maintenance', route: 'central', fluidRestricted: false, fluidRestrictionMl: null,
+  ageYears: 40, heightInches: 67, weight: 70, gender: 'male', patientGroup: 'adult', ventilator: false,
+  minuteVentilation: null, maxTemperatureF: null, burns: false, trauma: false, recentWeightChanges: '',
+  tpnIndicated: true, dietician: '', pharmacist: '', prematurityStatus: 'not_applicable', clinicalStatus: 'stable',
+  postnatalAgeDays: null, ageMonths: null, birthWeightKg: null, bloodGlucose: null, serumPhosphate: null, serumTriglycerides: null,
+  renalDisease: false, hepaticDisease: false, sepsis: false, cholestasis: false, desiredCalories: null, desiredProtein: null, cycleVolume: null,
+  cycleHours: null, taperUpHours: null, taperDownHours: null, days: 1
+};
 
-export function PatientInput({ onCalculate }: PatientInputProps) {
-  const [formData, setFormData] = useState<PatientData>({
-    dateOfBirth: '2005-02-12',
-    weight: 55,
-    isPremature: false,
-    gender: 'male',
-    height: 170,
-    clinicalCondition: 'normal',
-    stressFactor: 1.0,
-    days: 7,
-  });
+export function PatientInput({ onCalculate }: { onCalculate: (data: PatientData) => void }) {
+  const [data, setData] = useState<PatientData>(initial);
+  const isNeonate = data.patientGroup === 'preterm' || data.patientGroup === 'term_neonate';
+  const isChild = data.patientGroup === 'child' || data.patientGroup === 'critical_child';
+  const isCritical = data.patientGroup === 'critical_adult' || data.patientGroup === 'critical_child';
+  const number = (key: keyof PatientData, label: string, unit = '', required = false) => <label>{label}<div className="input-with-unit"><input required={required} type="number" step="any" min={key === 'days' ? 1 : undefined} max={key === 'days' ? 30 : undefined} value={(data[key] as number | null) ?? ''} onChange={event => setData({ ...data, [key]: event.target.value === '' ? null : Number(event.target.value) })}/>{unit && <span>{unit}</span>}</div></label>;
+  const toggle = (key: keyof PatientData, label: string) => <label className="condition-toggle"><input type="checkbox" checked={Boolean(data[key])} onChange={event => setData({ ...data, [key]: event.target.checked })}/><span>{label}</span></label>;
+  const section = (title: string, children: ReactNode) => <fieldset><legend>{title}</legend><div className="form-grid">{children}</div></fieldset>;
+  const selectPopulation = (patientGroup: PatientData['patientGroup']) => setData({ ...data, patientGroup, prematurityStatus: patientGroup === 'preterm' ? 'preterm' : patientGroup === 'term_neonate' ? 'term' : 'not_applicable', ageYears: patientGroup === 'preterm' || patientGroup === 'term_neonate' ? 0 : data.ageYears });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onCalculate(formData);
-  };
+  return <form className="pn-form" onSubmit={event => { event.preventDefault(); onCalculate(data); }}>
+    <div className="form-toolbar"><div><p className="eyebrow">Patient assessment</p><h2>Create a nutrition plan</h2></div></div>
 
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
-          {/* Date of Birth */}
-          <div>
-            <label htmlFor="dob" className="block text-sm text-gray-700 mb-2">
-              Date of birth (MM/dd/yyyy)
-            </label>
-            <input
-              id="dob"
-              type="date"
-              value={formData.dateOfBirth}
-              onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none"
-              required
-            />
-          </div>
+    {section('Plan settings', <>
+      <label>Patient population<select value={data.patientGroup} onChange={event => selectPopulation(event.target.value as PatientData['patientGroup'])}><option value="adult">Adult</option><option value="critical_adult">Critically ill adult</option><option value="child">Child (1 month–17 years)</option><option value="critical_child">Critically ill child</option><option value="preterm">Preterm neonate</option><option value="term_neonate">Term neonate</option></select></label>
+      <label>Guideline organization<select value={data.guidelineOrganization} onChange={event => setData({ ...data, guidelineOrganization: event.target.value })}><option value="ALL">Use all available guidelines</option>{availableOrganizations.map(organization => <option value={organization} key={organization}>{organization}</option>)}</select></label>
+      <label>Venous access<select value={data.route} onChange={event => setData({ ...data, route: event.target.value as PatientData['route'] })}><option value="central">Central venous access</option><option value="peripheral">Peripheral venous access</option></select></label>
+      <label>Nutrition goal<select value={data.goalOfTherapy} onChange={event => setData({ ...data, goalOfTherapy: event.target.value as PatientData['goalOfTherapy'] })}><option value="maintenance">Maintenance</option><option value="repletion">Nutrition repletion</option></select></label>
+      {number('days', 'Plan duration', 'days', true)}
+    </>)}
 
-          {/* Weight */}
-          <div>
-            <label htmlFor="weight" className="block text-sm text-gray-700 mb-2">
-              Weight:
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="weight"
-                type="number"
-                step="0.1"
-                min="0.5"
-                value={formData.weight}
-                onChange={(e) => setFormData({ ...formData, weight: parseFloat(e.target.value) })}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none"
-                required
-              />
-              <span className="px-3 py-2 bg-gray-100 border border-gray-300 rounded text-gray-700">
-                kg
-              </span>
-            </div>
-          </div>
+    {section('Patient demographics', <>
+      {!isNeonate && number('ageYears', 'Age', 'years', true)}
+      {isChild && number('ageMonths', 'Age when under 2 years', 'months')}
+      {isNeonate && number('postnatalAgeDays', 'Postnatal age', 'days', true)}
+      {isNeonate && number('birthWeightKg', 'Birth weight', 'kg')}
+      {number('weight', 'Current weight', 'kg', true)}
+      {!isNeonate && number('heightInches', 'Height', 'inches', true)}
+      <label>Sex<select value={data.gender} onChange={event => setData({ ...data, gender: event.target.value as PatientData['gender'] })}><option value="male">Male</option><option value="female">Female</option></select></label>
+    </>)}
 
-          {/* Height */}
-          <div>
-            <label htmlFor="height" className="block text-sm text-gray-700 mb-2">
-              Height:
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="height"
-                type="number"
-                step="0.1"
-                min="30"
-                value={formData.height}
-                onChange={(e) => setFormData({ ...formData, height: parseFloat(e.target.value) })}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none"
-                required
-              />
-              <span className="px-3 py-2 bg-gray-100 border border-gray-300 rounded text-gray-700">
-                cm
-              </span>
-            </div>
-          </div>
+    {section('Clinical conditions', <>
+      <label>Current clinical state<select value={data.clinicalStatus} onChange={event => setData({ ...data, clinicalStatus: event.target.value as PatientData['clinicalStatus'] })}><option value="stable">Clinically stable</option><option value="starting PN">Starting parenteral nutrition</option><option value="after change of PN bag">After a PN bag change</option><option value="critical">Critical illness</option></select></label>
+      {toggle('renalDisease', 'Acute kidney injury or renal disease')}
+      {toggle('hepaticDisease', 'Liver dysfunction')}
+      {toggle('sepsis', 'Sepsis')}
+      {(isNeonate || isChild) && toggle('cholestasis', 'Cholestasis')}
+      {!isNeonate && toggle('burns', 'Major burns')}
+      {!isNeonate && toggle('trauma', 'Major trauma')}
+      {(isCritical || !isNeonate) && toggle('ventilator', 'Mechanical ventilation')}
+      {data.ventilator && number('minuteVentilation', 'Minute ventilation', 'L/min')}
+      {!isNeonate && number('maxTemperatureF', 'Highest temperature', '°F')}
+      {toggle('fluidRestricted', 'Fluid restriction')}
+      {data.fluidRestricted && number('fluidRestrictionMl', 'Maximum daily fluid', 'mL/day')}
+    </>)}
 
-          {/* Number of Days */}
-          <div>
-            <label htmlFor="days" className="block text-sm text-gray-700 mb-2">
-              Number of Days:
-            </label>
-            <input
-              id="days"
-              type="number"
-              min="1"
-              max="365"
-              value={formData.days}
-              onChange={(e) => setFormData({ ...formData, days: parseInt(e.target.value) || 1 })}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none"
-              required
-            />
-          </div>
+    {section('Laboratory values', <>
+      {number('bloodGlucose', 'Blood glucose', 'mmol/L')}
+      {number('serumPhosphate', 'Serum phosphate', 'mmol/L')}
+      {number('serumTriglycerides', 'Serum triglycerides', 'mmol/L')}
+    </>)}
 
-          {/* Calculate Button */}
-          <div>
-            <button
-              type="submit"
-              className="w-full bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-2 rounded transition-colors flex items-center justify-center gap-2"
-            >
-              <Calculator className="w-4 h-4" />
-              Calculate
-            </button>
-          </div>
-        </div>
-
-        {/* Additional Options */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-          {/* Premature Checkbox */}
-          <div className="flex items-center">
-            <input
-              id="premature"
-              type="checkbox"
-              checked={formData.isPremature}
-              onChange={(e) => setFormData({ ...formData, isPremature: e.target.checked })}
-              className="w-4 h-4 text-cyan-500 border-gray-300 rounded focus:ring-cyan-500"
-            />
-            <label htmlFor="premature" className="ml-2 text-sm text-gray-700">
-              Premature
-            </label>
-          </div>
-
-          {/* Gender */}
-          <div>
-            <label htmlFor="gender" className="block text-sm text-gray-700 mb-2">
-              Gender:
-            </label>
-            <select
-              id="gender"
-              value={formData.gender}
-              onChange={(e) => setFormData({ ...formData, gender: e.target.value as 'male' | 'female' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none"
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-          </div>
-
-          {/* Clinical Condition */}
-          <div>
-            <label htmlFor="condition" className="block text-sm text-gray-700 mb-2">
-              Clinical Condition:
-            </label>
-            <select
-              id="condition"
-              value={formData.clinicalCondition}
-              onChange={(e) => {
-                const condition = e.target.value;
-                let stressFactor = 1.0;
-                if (condition === 'minor-surgery') stressFactor = 1.2;
-                else if (condition === 'infection') stressFactor = 1.4;
-                else if (condition === 'sepsis') stressFactor = 1.6;
-                else if (condition === 'severe-trauma') stressFactor = 1.8;
-                
-                setFormData({ ...formData, clinicalCondition: condition, stressFactor });
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none"
-            >
-              <option value="normal">Normal</option>
-              <option value="minor-surgery">Minor Surgery</option>
-              <option value="infection">Infection</option>
-              <option value="sepsis">Sepsis</option>
-              <option value="severe-trauma">Severe Trauma</option>
-            </select>
-          </div>
-        </div>
-      </form>
-
-      {/* Info Banner */}
-      <div className="mt-6 bg-blue-50 border border-blue-200 rounded p-4">
-        <p className="text-sm text-blue-800">
-          Click <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-600 text-white rounded-full text-xs">ⓘ</span> icon for more information about a particular item in the table!
-        </p>
-      </div>
-    </div>
-  );
+    <div className="form-submit"><button type="submit" className="primary-action">Calculate PN plan</button></div>
+  </form>;
 }

@@ -996,6 +996,15 @@ html {
   inherits: false
 }
 
+/* Focused worksheet layout. These rules keep the hand-authored screen stable
+   even when Tailwind's generated utility list changes. */
+#root { min-height: 100vh; }
+main { background: #f8fafc; color: #1e293b; }
+fieldset { background: #fff; }
+legend { color: #0f766e; }
+input, select { min-height: 2.5rem; }
+button { cursor: pointer; }
+
 @property --tw-ring-offset-width {
   syntax: "<length>";
   inherits: false;

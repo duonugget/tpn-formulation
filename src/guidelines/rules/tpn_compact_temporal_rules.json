@@ -1,0 +1,435 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Compact Temporal TPN Atomic Rule",
+  "type": "object",
+  "required": [
+    "rule_id",
+    "logic",
+    "action",
+    "source",
+    "quality"
+  ],
+  "properties": {
+    "rule_id": {
+      "type": "string"
+    },
+    "logic": {
+      "$ref": "#/$defs/logicNode"
+    },
+    "action": {
+      "type": "object",
+      "required": [
+        "type",
+        "variable",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "SET",
+            "SET_RANGE",
+            "SET_MIN",
+            "SET_MAX",
+            "START_AT",
+            "ADVANCE_BY",
+            "ADVANCE_TO",
+            "ADD",
+            "SUBTRACT",
+            "CALCULATE",
+            "INDIVIDUALIZE",
+            "MONITOR",
+            "PROVIDE_DAILY"
+          ]
+        },
+        "variable": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/actionValue"
+        },
+        "weight_basis": {
+          "enum": [
+            "actual_body_weight",
+            "ideal_body_weight",
+            "adjusted_body_weight",
+            "dry_weight",
+            "not_applicable",
+            "not_specified"
+          ]
+        },
+        "temporal": {
+          "$ref": "#/$defs/temporalAction"
+        }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "document_id",
+        "location",
+        "text"
+      ],
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "location": {
+          "type": [
+            "string",
+            "object"
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "quality": {
+      "type": "object",
+      "required": [
+        "extraction_confidence",
+        "dictionary_status"
+      ],
+      "properties": {
+        "evidence_score": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "extraction_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "dictionary_status": {
+          "enum": [
+            "VALID",
+            "MISSING_DICTIONARY_CONCEPT",
+            "AMBIGUOUS_MAPPING",
+            "NOT_CHECKED"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "condition": {
+      "type": "object",
+      "required": [
+        "variable",
+        "operator"
+      ],
+      "properties": {
+        "variable": {
+          "type": "string"
+        },
+        "operator": {
+          "enum": [
+            "==",
+            "!=",
+            "<",
+            "<=",
+            ">",
+            ">=",
+            "in",
+            "not_in",
+            "between",
+            "is_null",
+            "is_not_null"
+          ]
+        },
+        "value": {},
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "logicNode": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/condition"
+        },
+        {
+          "type": "object",
+          "required": [
+            "operator",
+            "rules"
+          ],
+          "properties": {
+            "operator": {
+              "enum": [
+                "AND",
+                "OR"
+              ]
+            },
+            "rules": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "$ref": "#/$defs/logicNode"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "operator",
+            "rule"
+          ],
+          "properties": {
+            "operator": {
+              "const": "NOT"
+            },
+            "rule": {
+              "$ref": "#/$defs/logicNode"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "actionValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "exact"
+          ],
+          "properties": {
+            "exact": {
+              "type": [
+                "number",
+                "string"
+              ]
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "formula"
+          ],
+          "properties": {
+            "formula": {
+              "type": "string"
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "$ref": "#/$defs/timeVaryingValue"
+        }
+      ]
+    },
+    "timeVaryingValue": {
+      "type": "object",
+      "required": [
+        "type",
+        "schedule"
+      ],
+      "properties": {
+        "type": {
+          "const": "TIME_VARYING"
+        },
+        "schedule": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "from",
+              "value"
+            ],
+            "properties": {
+              "from": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "to": {
+                "type": [
+                  "number",
+                  "string",
+                  "null"
+                ]
+              },
+              "value": {
+                "$ref": "#/$defs/actionValueStatic"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "actionValueStatic": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "exact"
+          ],
+          "properties": {
+            "exact": {
+              "type": [
+                "number",
+                "string"
+              ]
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "formula"
+          ],
+          "properties": {
+            "formula": {
+              "type": "string"
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "temporalAction": {
+      "type": "object",
+      "properties": {
+        "time_basis": {
+          "type": "string",
+          "description": "Clinical clock, e.g. postnatal_age_days or days_since_pn_start."
+        },
+        "start": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ]
+        },
+        "end": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ]
+        },
+        "schedule": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "from",
+              "value"
+            ],
+            "properties": {
+              "from": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "to": {
+                "type": [
+                  "number",
+                  "string",
+                  "null"
+                ]
+              },
+              "value": {
+                "$ref": "#/$defs/actionValueStatic"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
