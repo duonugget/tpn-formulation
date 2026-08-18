@@ -19,19 +19,19 @@ export function PatientInput({ onCalculate }: { onCalculate: (data: PatientData)
   const isNeonate = data.patientGroup === 'preterm' || data.patientGroup === 'term_neonate';
   const isChild = data.patientGroup === 'child' || data.patientGroup === 'critical_child';
   const isCritical = data.patientGroup === 'critical_adult' || data.patientGroup === 'critical_child';
+  const basePopulation = data.patientGroup === 'critical_adult' ? 'adult' : data.patientGroup === 'critical_child' ? 'child' : data.patientGroup;
   const number = (key: keyof PatientData, label: string, unit = '', required = false) => <label>{label}<div className="input-with-unit"><input required={required} type="number" step="any" min={key === 'days' ? 1 : undefined} max={key === 'days' ? 30 : undefined} value={(data[key] as number | null) ?? ''} onChange={event => setData({ ...data, [key]: event.target.value === '' ? null : Number(event.target.value) })}/>{unit && <span>{unit}</span>}</div></label>;
   const toggle = (key: keyof PatientData, label: string) => <label className="condition-toggle"><input type="checkbox" checked={Boolean(data[key])} onChange={event => setData({ ...data, [key]: event.target.checked })}/><span>{label}</span></label>;
   const section = (title: string, children: ReactNode) => <fieldset><legend>{title}</legend><div className="form-grid">{children}</div></fieldset>;
-  const selectPopulation = (patientGroup: PatientData['patientGroup']) => setData({ ...data, patientGroup, prematurityStatus: patientGroup === 'preterm' ? 'preterm' : patientGroup === 'term_neonate' ? 'term' : 'not_applicable', ageYears: patientGroup === 'preterm' || patientGroup === 'term_neonate' ? 0 : data.ageYears });
+  const selectPopulation = (population: 'adult' | 'child' | 'preterm' | 'term_neonate') => { const patientGroup: PatientData['patientGroup'] = isCritical && population === 'adult' ? 'critical_adult' : isCritical && population === 'child' ? 'critical_child' : population; setData({ ...data, patientGroup, prematurityStatus: population === 'preterm' ? 'preterm' : population === 'term_neonate' ? 'term' : 'not_applicable', ageYears: population === 'preterm' || population === 'term_neonate' ? 0 : data.ageYears }); };
+  const setCritical = (critical: boolean) => { const patientGroup: PatientData['patientGroup'] = critical && basePopulation === 'adult' ? 'critical_adult' : critical && basePopulation === 'child' ? 'critical_child' : basePopulation; setData({ ...data, patientGroup, clinicalStatus: critical ? 'critical' : 'stable' }); };
 
   return <form className="pn-form" onSubmit={event => { event.preventDefault(); onCalculate(data); }}>
     <div className="form-toolbar"><div><p className="eyebrow">Patient assessment</p><h2>Create a nutrition plan</h2></div></div>
 
     {section('Plan settings', <>
-      <label>Patient population<select value={data.patientGroup} onChange={event => selectPopulation(event.target.value as PatientData['patientGroup'])}><option value="adult">Adult</option><option value="critical_adult">Critically ill adult</option><option value="child">Child (1 month–17 years)</option><option value="critical_child">Critically ill child</option><option value="preterm">Preterm neonate</option><option value="term_neonate">Term neonate</option></select></label>
-      <label>Guideline organization<select value={data.guidelineOrganization} onChange={event => setData({ ...data, guidelineOrganization: event.target.value })}><option value="ALL">Use all available guidelines</option>{availableOrganizations.map(organization => <option value={organization} key={organization}>{organization}</option>)}</select></label>
+      <label>Guideline organization<select value={data.guidelineOrganization} onChange={event => setData({ ...data, guidelineOrganization: event.target.value })}>{availableOrganizations.map(organization => <option value={organization} key={organization}>{organization}</option>)}</select></label>
       <label>Venous access<select value={data.route} onChange={event => setData({ ...data, route: event.target.value as PatientData['route'] })}><option value="central">Central venous access</option><option value="peripheral">Peripheral venous access</option></select></label>
-      <label>Nutrition goal<select value={data.goalOfTherapy} onChange={event => setData({ ...data, goalOfTherapy: event.target.value as PatientData['goalOfTherapy'] })}><option value="maintenance">Maintenance</option><option value="repletion">Nutrition repletion</option></select></label>
       {number('days', 'Plan duration', 'days', true)}
     </>)}
 
@@ -46,7 +46,8 @@ export function PatientInput({ onCalculate }: { onCalculate: (data: PatientData)
     </>)}
 
     {section('Clinical conditions', <>
-      <label>Current clinical state<select value={data.clinicalStatus} onChange={event => setData({ ...data, clinicalStatus: event.target.value as PatientData['clinicalStatus'] })}><option value="stable">Clinically stable</option><option value="starting PN">Starting parenteral nutrition</option><option value="after change of PN bag">After a PN bag change</option><option value="critical">Critical illness</option></select></label>
+      <label>Patient population<select value={basePopulation} onChange={event => selectPopulation(event.target.value as 'adult' | 'child' | 'preterm' | 'term_neonate')}><option value="adult">Adult</option><option value="child">Child (1 month–17 years)</option><option value="preterm">Preterm neonate</option><option value="term_neonate">Term neonate</option></select></label>
+      <label className="condition-toggle"><input type="checkbox" checked={isCritical || data.clinicalStatus === 'critical'} onChange={event => setCritical(event.target.checked)}/><span>Critically ill</span></label>
       {toggle('renalDisease', 'Acute kidney injury or renal disease')}
       {toggle('hepaticDisease', 'Liver dysfunction')}
       {toggle('sepsis', 'Sepsis')}
@@ -58,12 +59,6 @@ export function PatientInput({ onCalculate }: { onCalculate: (data: PatientData)
       {!isNeonate && number('maxTemperatureF', 'Highest temperature', '°F')}
       {toggle('fluidRestricted', 'Fluid restriction')}
       {data.fluidRestricted && number('fluidRestrictionMl', 'Maximum daily fluid', 'mL/day')}
-    </>)}
-
-    {section('Laboratory values', <>
-      {number('bloodGlucose', 'Blood glucose', 'mmol/L')}
-      {number('serumPhosphate', 'Serum phosphate', 'mmol/L')}
-      {number('serumTriglycerides', 'Serum triglycerides', 'mmol/L')}
     </>)}
 
     <div className="form-submit"><button type="submit" className="primary-action">Calculate PN plan</button></div>

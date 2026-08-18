@@ -34,5 +34,6 @@
 .nutrient-table { min-width: 520px; }
 .nutrient-table th, .nutrient-table td { width: 50%; }
 .nutrient-table .osmolarity-row td { border-top: 2px solid #fb923c; border-bottom: 2px solid #fb923c; background: #fff7ed; color: #9a3412; font-size: 1rem; }
+.result-topline p { color: var(--ink); }
 @media (max-width: 900px) { .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .form-grid { grid-template-columns: 1fr; } }
