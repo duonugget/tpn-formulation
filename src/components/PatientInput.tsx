@@ -10,7 +10,7 @@ const initial: PatientData = {
   minuteVentilation: null, maxTemperatureF: null, burns: false, trauma: false, recentWeightChanges: '',
   tpnIndicated: true, dietician: '', pharmacist: '', prematurityStatus: 'not_applicable', clinicalStatus: 'stable',
   postnatalAgeDays: null, ageMonths: null, birthWeightKg: null, bloodGlucose: null, serumPhosphate: null, serumTriglycerides: null,
-  renalDisease: false, hepaticDisease: false, sepsis: false, cholestasis: false, desiredCalories: null, desiredProtein: null, cycleVolume: null,
+  renalDisease: false, dialysis: false, hepaticDisease: false, hepaticStress: false, sepsis: false, cholestasis: false, hyperglycemia: false, desiredCalories: null, desiredProtein: null, cycleVolume: null,
   cycleHours: null, taperUpHours: null, taperDownHours: null, days: 1
 };
 
@@ -30,6 +30,7 @@ export function PatientInput({ onCalculate }: { onCalculate: (data: PatientData)
     <div className="form-toolbar"><div><p className="eyebrow">Patient assessment</p><h2>Create a nutrition plan</h2></div></div>
 
     {section('Plan settings', <>
+      <label>Patient population<select value={basePopulation} onChange={event => selectPopulation(event.target.value as 'adult' | 'child' | 'preterm' | 'term_neonate')}><option value="adult">Adults</option><option value="child">Children</option><option value="preterm">Preterm neonates (&lt;37 weeks)</option><option value="term_neonate">Term neonates (39–40+6 weeks)</option></select></label>
       <label>Guideline organization<select value={data.guidelineOrganization} onChange={event => setData({ ...data, guidelineOrganization: event.target.value })}>{availableOrganizations.map(organization => <option value={organization} key={organization}>{organization}</option>)}</select></label>
       <label>Venous access<select value={data.route} onChange={event => setData({ ...data, route: event.target.value as PatientData['route'] })}><option value="central">Central venous access</option><option value="peripheral">Peripheral venous access</option></select></label>
       {number('days', 'Plan duration', 'days', true)}
@@ -46,19 +47,14 @@ export function PatientInput({ onCalculate }: { onCalculate: (data: PatientData)
     </>)}
 
     {section('Clinical conditions', <>
-      <label>Patient population<select value={basePopulation} onChange={event => selectPopulation(event.target.value as 'adult' | 'child' | 'preterm' | 'term_neonate')}><option value="adult">Adult</option><option value="child">Child (1 month–17 years)</option><option value="preterm">Preterm neonate</option><option value="term_neonate">Term neonate</option></select></label>
       <label className="condition-toggle"><input type="checkbox" checked={isCritical || data.clinicalStatus === 'critical'} onChange={event => setCritical(event.target.checked)}/><span>Critically ill</span></label>
-      {toggle('renalDisease', 'Acute kidney injury or renal disease')}
-      {toggle('hepaticDisease', 'Liver dysfunction')}
+      {toggle('renalDisease', 'Renal disease')}
+      {data.renalDisease && toggle('dialysis', 'Receiving dialysis')}
+      {toggle('hepaticDisease', 'Hepatic disease')}
+      {data.hepaticDisease && toggle('hepaticStress', 'Hepatic stress')}
+      {data.hepaticDisease && toggle('cholestasis', 'Cholestasis')}
       {toggle('sepsis', 'Sepsis')}
-      {(isNeonate || isChild) && toggle('cholestasis', 'Cholestasis')}
-      {!isNeonate && toggle('burns', 'Major burns')}
-      {!isNeonate && toggle('trauma', 'Major trauma')}
-      {(isCritical || !isNeonate) && toggle('ventilator', 'Mechanical ventilation')}
-      {data.ventilator && number('minuteVentilation', 'Minute ventilation', 'L/min')}
-      {!isNeonate && number('maxTemperatureF', 'Highest temperature', '°F')}
-      {toggle('fluidRestricted', 'Fluid restriction')}
-      {data.fluidRestricted && number('fluidRestrictionMl', 'Maximum daily fluid', 'mL/day')}
+      {toggle('hyperglycemia', 'Hyperglycemia')}
     </>)}
 
     <div className="form-submit"><button type="submit" className="primary-action">Calculate PN plan</button></div>

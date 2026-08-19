@@ -48,7 +48,7 @@ export function ResultsTable({ plans, patientInfo }: { plans: TPNResult[][]; pat
       ['Component', 'Daily amount', 'Unit', 'Concentration / rate'],
       ['Total volume', fluid, 'mL/day', `${rate.toFixed(1)} mL/hr`],
       ['ESTIMATED OSMOLARITY', osmolarity?.value ?? 'Unable to estimate', osmolarity?.unit ?? '', patientInfo.route === 'peripheral' ? 'Peripheral limit: ≤900 mOsm/L' : 'Verify before compounding'],
-      ['Dextrose', glucose, 'g/day', `${(glucose / fluid * 100).toFixed(2)}%`],
+      ['Glucose', glucose, 'g/day', `${(glucose / fluid * 100).toFixed(2)}%`],
       ['Amino acids', protein, 'g/day', `${(protein / fluid * 100).toFixed(2)}%`],
       ['Lipid 20%', lipid, 'g/day', `${lipidRate.toFixed(2)} mL/hr`],
       ['Total energy', glucose * 3.4 + protein * 4 + lipid * 9, 'kcal/day', ''],

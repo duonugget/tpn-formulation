@@ -10,7 +10,7 @@ export interface PatientData {
   goalOfTherapy: 'maintenance' | 'repletion'; route: 'central' | 'peripheral'; fluidRestricted: boolean; fluidRestrictionMl: number | null;
   ageYears: number; heightInches: number; weight: number; gender: 'male' | 'female'; patientGroup: 'adult' | 'critical_adult' | 'preterm' | 'term_neonate' | 'child' | 'critical_child'; ventilator: boolean; minuteVentilation: number | null;
   maxTemperatureF: number | null; burns: boolean; trauma: boolean; recentWeightChanges: string; tpnIndicated: boolean; dietician: string; pharmacist: string;
-  prematurityStatus: 'preterm' | 'term' | 'not_applicable' | 'unknown'; clinicalStatus: 'starting PN' | 'after change of PN bag' | 'stable' | 'critical'; postnatalAgeDays: number | null; ageMonths: number | null; birthWeightKg: number | null; bloodGlucose: number | null; serumPhosphate: number | null; serumTriglycerides: number | null; renalDisease: boolean; hepaticDisease: boolean; sepsis: boolean; cholestasis: boolean;
+  prematurityStatus: 'preterm' | 'term' | 'not_applicable' | 'unknown'; clinicalStatus: 'starting PN' | 'after change of PN bag' | 'stable' | 'critical'; postnatalAgeDays: number | null; ageMonths: number | null; birthWeightKg: number | null; bloodGlucose: number | null; serumPhosphate: number | null; serumTriglycerides: number | null; renalDisease: boolean; dialysis: boolean; hepaticDisease: boolean; hepaticStress: boolean; sepsis: boolean; cholestasis: boolean; hyperglycemia: boolean;
   desiredCalories: number | null; desiredProtein: number | null;
   cycleVolume: number | null; cycleHours: number | null; taperUpHours: number | null; taperDownHours: number | null; days: number; planDuration?: number;
 }
